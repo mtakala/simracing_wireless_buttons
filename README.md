@@ -7,3 +7,9 @@ resistors and two resistor to get battery voltage monitoring voltage divider cir
 Requires two Teensy microcontrollers connected with two HC-05 (or compatible) bluetooth modules, with Serial connection 
 at Teensy pins 0 and 1. Connection status is connected to pin 2. Please adjust the two HC-05 bluetooth modules to pair with 
 each other beforehand.
+
+Credit to
+  Thomas O Fredericks (tof@t-o-f.info)
+  and previous contributions by Eric Lowry, Jim Schimpf and Tom Harkaway
+  
+  for their work on the bounce library.
