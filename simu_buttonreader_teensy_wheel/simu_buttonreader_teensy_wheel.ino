@@ -1,43 +1,43 @@
-// teensy 3.2 sim wheel button reader
-// usb = Serial
-// rx0/tx1 = Serial1
+/* Base (connected with USB to a PC)
+   for wireless bluetooth button/shifter system using
+   two Teensy 3.2 microcontrollers and 2 HC-05 bluetooth modules.
 
-/*
-0 serial
-1 serial
-2 bluetooth status
-3 Button0
-4 Button1
-5 Button2
-6 Button3
-7 Button4
-8 Button5
-9 Button6
-10  Button7
-11  Button8
-12  Button9
-13  Teensyn oma ledi, vilkuttaa periodic lähetyksen tahtiin
-14 
-15
-16
-17
-18
-19
-20
-21/A7 Battery voltage adc
-22 Connection_led
-23 Battery_low_led
+   Pinout for this unit on the wheel itself:   
+   0 serial
+   1 serial
+   2 bluetooth status
+   3 Button0
+   4 Button1
+   5 Button2
+   6 Button3
+   7 Button4
+   8 Button5
+   9 Button6
+   10  Button7
+   11  Button8
+   12  Button9
+   13  Teensyn oma ledi, vilkuttaa periodic lähetyksen tahtiin
+   14 
+   15
+   16
+   17
+   18
+   19
+   20
+   21/A7 Battery voltage adc
+   22 Connection_led
+   23 Battery_low_led
 */
+   
 
 
-// Include the Bounce2 library found here :
+// Included the Bounce2 library found here :
 // https://github.com/thomasfredericks/Bounce2
 
-// kirjasto modattu käyttämään digitalReadFast()
+// The library has been modified to use digitalReadFast()
 
-// Ratin napeissa (etenkin vaihtonapeissa) tärkeää
-// responsiivisuus. Siksi tehdään tää:
-// define this in the bounce2.h:
+// Fast reactions are needed in the buttons. Therefore in the library,
+// this is defined:
 // By defining "#define BOUNCE_LOCK_OUT" in "Bounce.h" 
 // you can activate the alternative debouncing method. This method is 
 // a lot more responsive, but does not cancel noise.
@@ -55,12 +55,12 @@ Bounce debouncer10 = Bounce();
 Bounce debouncer11 = Bounce(); 
 Bounce debouncer12 = Bounce(); 
 
-// nappuloiden variablet
+// Two bytes to store button status
 volatile int buttons_0_6 = 0b00000000;
 volatile int buttons_7_13 = 0b10000000;
 volatile short int ledStatus = 0;
 
-// periodic status intervallit millisekunteina
+// periodic status intervalls in milliseconds
 long const int StatusInterval = 2000; // pari sekuntia
 long const int BatteryInterval = 60000; // minuutti
 
@@ -72,8 +72,8 @@ const int batterylowVoltageThreshold = 700;
 void setup()
 {
   InitialiseIO();
-  // intervallit säädettävissä, paddleille pienempi ja
-  // nappuloille vähän isompi. Vaatii hands-on testausta.
+  
+  // Define/set debounce intervalls here to suit your buttons
   
   debouncer3.attach(3);  debouncer3.interval(5);
   debouncer4.attach(4);  debouncer4.interval(5);
@@ -88,10 +88,15 @@ void setup()
 
   buttons_0_6 = 0b00000000;
   buttons_7_13 = 0b10000000;
-  // serial1 on rx/tx pinnit
-  Serial1.begin(9600);
+  
+  // wait for bluetooth connection
+  digitalWriteFast(22, LOW);
+  while(digitalRead(2) == 0);
+  // bluetooth is now connected
+  Serial1.begin(57600); // use same baud rate as you have set your BT modules
+  Serial1.flush();
+  Serial1.flush(); // flush twice to make sure
 
-  //Serial.begin(9600);
   
   lastStatusUpdate=millis();
   lastBatteryUpdate=millis();
@@ -102,30 +107,12 @@ void setup()
   analogReadAveraging(5);
   analogReference(INTERNAL);
 
+  }
+
+
   
-  // setup 1000ms timer
-//  noInterrupts(); // disable all interrupts
-//  TCCR1A = 0;
-//  TCCR1B = 0;
-//  TCNT1 = 0;
-//  OCR1A = 31250; // compare match register 8MHz/256 = 1Hz
-//  TCCR1B |= (1 << WGM12); // CTC mode
-//  TCCR1B |= (1 << CS12); // 256 prescaler
-//  TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-//  interrupts(); // enable all interrupts
-}
-
-
-
-//ISR(Timer1_COMPA_vect) // timer compare interrupt service routine
-//{
-//  periodic_status = 1;
-//}
-
-
-
 void loop() {
-  // debug loopin pituuden mittaukseen
+  // debug for loop execution time measurement
   //long loopstart = micros();
 
   // bluetooth status
@@ -134,7 +121,8 @@ void loop() {
   } else {
     digitalWriteFast(22, LOW);
   }
-
+  
+  // go through all buttons. Button press is detected on falling edge.
 
   
   debouncer3.update();
@@ -228,26 +216,28 @@ void loop() {
   }
 
 
-  // debug loopin pituuden mittaustulos usb seriaaliin
-  //long loopend = micros();
-  //Serial.print((String)(loopend-loopstart));
-  //Serial.print("\n");
+  // debug for loop length execution time measurement, output to usb serial.
+  // long loopend = micros();
+  // Serial.print((String)(loopend-loopstart));
+  // Serial.print("\n");
 
 
 
 
   // periodic sanity
-  
+  // sends known button statuses to the base system at defined intervalls.
   if(lastStatusUpdate + StatusInterval > millis()) { 
       lastStatusUpdate = millis();
       Serial1.write(buttons_0_6);
       Serial1.write(buttons_7_13);
+	  
+	  // some debug prints to usb serial 
       //Serial.print("Periodic!\n");
       //delay(500);
       //delay(500);
     
-    // 13 = punainen ledi teensyssä, saa vilkuttaa
-    // aliveness status indikaattori
+    // 13 = red led on teensy 3.2. Might as well flash it.
+    // as aliveness status.
     if(ledStatus) {
       ledStatus = 0;
       digitalWriteFast(13, LOW);
@@ -258,6 +248,7 @@ void loop() {
     }
    }
 
+  // check battery voltage at defined intervals. 
   if(lastBatteryUpdate + BatteryInterval > millis()) {
     lastBatteryUpdate = millis(); 
     // adc ja ledin nitkutus tänne
@@ -297,6 +288,6 @@ void InitialiseIO(){
   pinMode(22, OUTPUT);
   pinMode(23, OUTPUT);
   digitalWriteFast(22, LOW);
-  digitalWriteFast(23, HIGH); // oletus että patteri ei oo alussa tyhjä
+  digitalWriteFast(23, HIGH); // By default the battery is not empty at startup.
 }
 
