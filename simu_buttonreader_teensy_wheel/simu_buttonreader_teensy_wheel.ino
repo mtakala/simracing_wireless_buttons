@@ -6,17 +6,8 @@
    0 serial
    1 serial
    2 bluetooth status
-   3 Button0
-   4 Button1
-   5 Button2
-   6 Button3
-   7 Button4
-   8 Button5
-   9 Button6
-   10  Button7
-   11  Button8
-   12  Button9
-   13  Teensyn oma ledi, vilkuttaa periodic lähetyksen tahtiin
+    
+   13  Teensy's own led
    14 
    15
    16
@@ -24,11 +15,16 @@
    18
    19
    20
-   21/A7 Battery voltage adc
+   21/A7 Battery_low_led
    22 Connection_led
-   23 Battery_low_led
+   23 Battery voltage adc
 */
-   
+
+#define btStatus 2
+#define teensyLed 13
+#define batteryLed 21 
+#define connectionLed 22
+#define batteryADC 23 
 
 
 // Included the Bounce2 library found here :
@@ -60,18 +56,37 @@ volatile int buttons_0_6 = 0b00000000;
 volatile int buttons_7_13 = 0b10000000;
 volatile short int ledStatus = 0;
 
-// periodic status intervalls in milliseconds
-long const int StatusInterval = 2000; // pari sekuntia
-long const int BatteryInterval = 60000; // minuutti
+// periodic status intervals in milliseconds
+long const int StatusInterval = 1500; 
+long const int BatteryInterval = 1000; 
+long const int WaitIndicationInterval = 200;
 
-long int lastStatusUpdate;
-long int lastBatteryUpdate;
+long int lastStatusUpdate = 0;
+long int lastBatteryUpdate = 0;
+long int lastWaitIndicationUpdate = 0;
 
-const int batterylowVoltageThreshold = 700;
+// Adjust to fit your voltage divider and battery.
+// This value is good for 33k / 11.85k resistors when using
+// internal 1.2V voltage reference on Teensy 3.2.
+const int batterylowVoltageThreshold = 3730;
+
+boolean batteryLow = false;
+byte batteryLedStatus = 0;
+
+boolean btConnected = false;
+byte connectionLedStatus = 0;
  
 void setup()
 {
   InitialiseIO();
+  
+  // Show that we are booting up
+
+  digitalWriteFast(connectionLed, HIGH);
+  digitalWriteFast(batteryLed, HIGH);
+  delay(1000);
+  digitalWriteFast(connectionLed, LOW);
+  digitalWriteFast(batteryLed, LOW);
   
   // Define/set debounce intervalls here to suit your buttons
   
@@ -88,43 +103,110 @@ void setup()
 
   buttons_0_6 = 0b00000000;
   buttons_7_13 = 0b10000000;
+
+  lastStatusUpdate = millis();
+  lastBatteryUpdate = millis();
+  lastWaitIndicationUpdate = millis();
   
-  // wait for bluetooth connection
-  digitalWriteFast(22, LOW);
-  while(digitalRead(2) == 0);
-  // bluetooth is now connected
+  // Connect to Bt module
   Serial1.begin(57600); // use same baud rate as you have set your BT modules
   Serial1.flush();
-  Serial1.flush(); // flush twice to make sure
+}
+  
+void loop() {
+  // Check Bluetooth status
+  if (digitalReadFast(btStatus)) {
+    digitalWriteFast(connectionLed, HIGH);
+    btConnected = true;
+  } else btConnected = false;
+  
+  // Go through all buttons if connected. Button press is detected on falling edge.
+  if (btConnected) {
+    updateButtons();
+    sanityUpdate();
+  } else {
+    runWaitBtIndication();
+  }
+  
+  checkBattery();
+}
 
-  
-  lastStatusUpdate=millis();
-  lastBatteryUpdate=millis();
-  
-  ledStatus = 0;
+void runWaitBtIndication() {
+  if (millis() > (lastWaitIndicationUpdate + WaitIndicationInterval)) {
+    lastWaitIndicationUpdate = millis();
+    digitalWriteFast(connectionLed, connectionLedStatus);
+    connectionLedStatus = !connectionLedStatus;
+  }
+}
+
+void checkBattery() {
+  // check battery voltage at defined intervals. 
+  if (millis() > (lastBatteryUpdate + BatteryInterval)) {
+    lastBatteryUpdate = millis(); 
+
+    // check if battery low:
+    if (analogRead(batteryADC) < batterylowVoltageThreshold) {
+      batteryLow = true;
+      buttons_7_13 |= 0b01000000; // this bit tells battery status to base unit
+      
+    } else {
+      batteryLow = false;
+      buttons_7_13 &= ~(0b01000000); // this bit tells battery status to base unit
+    }
+
+    if (batteryLow) {
+      digitalWriteFast(batteryLed, batteryLedStatus);
+      batteryLedStatus = !batteryLedStatus;
+    } else digitalWriteFast(batteryLed, LOW);
+  }
+}
+
+void sanityUpdate() {
+  // Periodic sanity update
+  // sends known button statuses to the base system at defined intervalls.
+  if(millis() > (lastStatusUpdate + StatusInterval)) { 
+      lastStatusUpdate = millis();
+      Serial1.write(buttons_0_6);
+      Serial1.write(buttons_7_13);
+
+    // 13 = red led on teensy 3.2. Might as well flash it.
+    // as aliveness status.
+    if(ledStatus) {
+      ledStatus = 0;
+      digitalWriteFast(teensyLed, LOW);
+    } else {
+      ledStatus = 1;
+      digitalWriteFast(teensyLed, HIGH);
+    }
+  }
+}
+
+void InitialiseIO(){
+  pinMode(btStatus, INPUT);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
+  pinMode(6, INPUT_PULLUP);
+  pinMode(7, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
+  pinMode(10, INPUT_PULLUP);
+  pinMode(11, INPUT_PULLUP);
+  pinMode(12, INPUT_PULLUP);
+  pinMode(teensyLed, OUTPUT);
+  pinMode(batteryLed, OUTPUT);
+  pinMode(connectionLed, OUTPUT);
+  pinMode(batteryADC, INPUT);
+  digitalWriteFast(teensyLed, LOW);
+  digitalWriteFast(connectionLed, LOW);
+  digitalWriteFast(batteryLed, LOW); // By default the battery is not empty at startup.
 
   analogReadRes(12);
   analogReadAveraging(5);
   analogReference(INTERNAL);
+}
 
-  }
-
-
-  
-void loop() {
-  // debug for loop execution time measurement
-  //long loopstart = micros();
-
-  // bluetooth status
-  if(digitalReadFast(2)) {
-    digitalWriteFast(22, HIGH);
-  } else {
-    digitalWriteFast(22, LOW);
-  }
-  
-  // go through all buttons. Button press is detected on falling edge.
-
-  
+void updateButtons() {
   debouncer3.update();
   if(debouncer3.fell()) {
     buttons_0_6 |= 0b00000001;
@@ -214,80 +296,5 @@ void loop() {
     buttons_7_13 &= ~(0b00000100);
     Serial1.write(buttons_7_13);
   }
-
-
-  // debug for loop length execution time measurement, output to usb serial.
-  // long loopend = micros();
-  // Serial.print((String)(loopend-loopstart));
-  // Serial.print("\n");
-
-
-
-
-  // periodic sanity
-  // sends known button statuses to the base system at defined intervalls.
-  if(lastStatusUpdate + StatusInterval > millis()) { 
-      lastStatusUpdate = millis();
-      Serial1.write(buttons_0_6);
-      Serial1.write(buttons_7_13);
-	  
-	  // some debug prints to usb serial 
-      //Serial.print("Periodic!\n");
-      //delay(500);
-      //delay(500);
-    
-    // 13 = red led on teensy 3.2. Might as well flash it.
-    // as aliveness status.
-    if(ledStatus) {
-      ledStatus = 0;
-      digitalWriteFast(13, LOW);
-    
-    } else {
-      ledStatus = 1;
-      digitalWriteFast(13, HIGH);
-    }
-   }
-
-  // check battery voltage at defined intervals. 
-  if(lastBatteryUpdate + BatteryInterval > millis()) {
-    lastBatteryUpdate = millis(); 
-    // adc ja ledin nitkutus tänne
-    int batterylow=0;
-
-    // check if battery low:
-
-    long batteryVoltage = analogRead(A7);
-    if (batteryVoltage < batterylowVoltageThreshold) {
-      batterylow=1;
-    }
- 
-    if(batterylow) {
-      digitalWriteFast(23, HIGH);
-    } else {
-      digitalWriteFast(23, LOW);
-    }
-  }
-
-}
-
-
-void InitialiseIO(){
-  pinMode(2, INPUT);
-  pinMode(3, INPUT_PULLUP);
-  pinMode(4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
-  pinMode(6, INPUT_PULLUP);
-  pinMode(7, INPUT_PULLUP);
-  pinMode(8, INPUT_PULLUP);
-  pinMode(9, INPUT_PULLUP);
-  pinMode(10, INPUT_PULLUP);
-  pinMode(11, INPUT_PULLUP);
-  pinMode(12, INPUT_PULLUP);
-  pinMode(13, OUTPUT);
-  pinMode(21, INPUT);
-  pinMode(22, OUTPUT);
-  pinMode(23, OUTPUT);
-  digitalWriteFast(22, LOW);
-  digitalWriteFast(23, HIGH); // By default the battery is not empty at startup.
 }
 
