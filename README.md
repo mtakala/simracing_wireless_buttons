@@ -1,7 +1,7 @@
 # simracing_wireless_buttons
 Implementation of wireless buttons for a simracing wheel using two HC-05 bluetooth modules and two Teensy microcontrollers.
 
-BOM: Buttons, paddle shifters, wires, soldering iron and solder. Something to attatch the buttons to. Battery connector. 
+BOM: Buttons, paddle shifters, wires, soldering iron and solder. Something to attach the buttons to. Battery connector. 
 Two leds with suitable series resistors and two resistors to get battery voltage monitoring voltage divider circuit working. 
 One 1S Lithium-Polymer battery is required to power up the system at the wheel.
 
