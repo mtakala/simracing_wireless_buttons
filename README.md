@@ -14,4 +14,6 @@ Credit to
   and previous contributions by Eric Lowry, Jim Schimpf and Tom Harkaway
 for their work on the bounce library.
 
-Initial (untested) commits on August 4th, 2016. For battery voltage monitoring, resistor values are needed.
+Initial (untested) commits on August 4th, 2016.
+Initial testing by Juha Koljonen on August 5th, 2016.
+Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Delay / lag is in between 10-15ms.
