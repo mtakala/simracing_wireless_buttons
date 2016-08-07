@@ -78,7 +78,6 @@ void loop() {
     digitalWriteFast(connectionLed, HIGH);
     btConnected = true;
   } else {
-    digitalWriteFast(connectionLed, LOW);
     btConnected = false;
   }
 
