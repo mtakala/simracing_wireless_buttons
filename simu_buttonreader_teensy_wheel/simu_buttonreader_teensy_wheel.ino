@@ -3,8 +3,8 @@
    two Teensy 3.2 microcontrollers and 2 HC-05 bluetooth modules.
 
    Pinout for this unit on the wheel itself:   
-   0 serial
-   1 serial
+   0 serial rx
+   1 serial tx
    2 bluetooth status
     
    13  Teensy's own led
