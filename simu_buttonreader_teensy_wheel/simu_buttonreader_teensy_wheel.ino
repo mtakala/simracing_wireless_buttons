@@ -1,25 +1,45 @@
-/* Base (connected with USB to a PC)
+/* 
+ *  Code to put on the Wheel (connected with Bluetooth to a another system)
    for wireless bluetooth button/shifter system using
    two Teensy 3.2 microcontrollers and 2 HC-05 bluetooth modules.
 
-   Pinout for this unit on the wheel itself:   
+   Authors: Mika Takala & Juha Koljonen 2016
+
+   PINOUT
+   -------------------------------------------------------------------------
    0 serial rx
    1 serial tx
-   2 bluetooth status
-    
+   2 bluetooth stat
+   3-12 button inputs
    13  Teensy's own led
-   14 
-   15
-   16
-   17
-   18
-   19
-   20
+   14-20 unused
    21/A7 Battery_low_led
    22 Connection_led
    23 Battery voltage adc
+   24-33 unused
+   -------------------------------------------------------------------------
+
+   NOTES ABOUT POWER SAVING MEASURES:
+   -------------------------------------------------------------------------
+   (1) 
+   As the system is intended to be battery powered, the recommendation 
+   is to program Teensy as USB TYPE = NO USB and use for example 24MHz 
+   clock. These are set from Tools menu in Arduino/Teensyduino IDE:
+   Setting NO USB will require you to press the manual program button on 
+   Teensy to upload the code, but it will save a lot of power.
+
+   (2)
+   Additionally you can set all unused inputs as outputs, which
+   makes them not floating and they will consume less power that way.
+   This has been implemented with a macro, and it has NOT been enabled
+   as default.
+   PLEASE BE SURE TO NOT HAVE ANYTHING CONNECTED TO THE UNUSED PINS
+   LISTED IN InitialiseIO() FUNCTION. THE AUTHOR(S) TAKE NOT RESPONSIBILITY
+   IF YOU MANAGE TO FRY/SHORT OUT A PIN OR YOUR TEENSY MICROCONTROLLER.
+   -------------------------------------------------------------------------
 */
 
+// used pin definitions, other than buttons
 #define btStatus 2
 #define teensyLed 13
 #define batteryLed 21 
@@ -27,19 +47,29 @@
 #define batteryADC 23 
 
 
+// Uncomment this to save a bit of battery power.
+// DANGER: Please make double sure that all your unconnected pins
+// are correctly set in InitialiseIO() -function.
+// Errors here will permanently damage your Teensy microcontroller.
+
+// #define POWERSAVING_WITH_PINS_AS_OUTPUTS
+
+
+
 // Included the Bounce2 library found here :
 // https://github.com/thomasfredericks/Bounce2
-
-// The library has been modified to use digitalReadFast()
-
+// The library has been modified to use digitalReadFast().
 // Fast reactions are needed in the buttons. Therefore in the library,
 // this is defined:
-// By defining "#define BOUNCE_LOCK_OUT" in "Bounce.h" 
-// you can activate the alternative debouncing method. This method is 
-// a lot more responsive, but does not cancel noise.
+//  By defining "#define BOUNCE_LOCK_OUT" in "Bounce.h" 
+//  you can activate the alternative debouncing method. This method is 
+//  a lot more responsive, but does not cancel noise.
 #include "Bounce2.h"
 
 
+// Bouncer instances connected to buttons.
+// If you have more or less buttons,
+// adjust this to your liking.
 Bounce debouncer3 = Bounce(); 
 Bounce debouncer4 = Bounce(); 
 Bounce debouncer5 = Bounce(); 
@@ -53,7 +83,7 @@ Bounce debouncer12 = Bounce();
 
 // Two bytes to store button status
 volatile int buttons_0_6 = 0b00000000;
-volatile int buttons_7_13 = 0b10000000;
+volatile int buttons_7_13 = 0b10000000; // MSB indicates which is it.
 volatile short int ledStatus = 0;
 
 // periodic status intervals in milliseconds
@@ -89,7 +119,8 @@ void setup()
   digitalWriteFast(batteryLed, LOW);
   
   // Define/set debounce intervalls here to suit your buttons
-  
+  // Remember to adjust the amount of these if you have
+  // more or less buttons.
   debouncer3.attach(3);  debouncer3.interval(5);
   debouncer4.attach(4);  debouncer4.interval(5);
   debouncer5.attach(5);  debouncer5.interval(5);
@@ -181,32 +212,11 @@ void sanityUpdate() {
   }
 }
 
-void InitialiseIO(){
-  pinMode(btStatus, INPUT);
-  pinMode(3, INPUT_PULLUP);
-  pinMode(4, INPUT_PULLUP);
-  pinMode(5, INPUT_PULLUP);
-  pinMode(6, INPUT_PULLUP);
-  pinMode(7, INPUT_PULLUP);
-  pinMode(8, INPUT_PULLUP);
-  pinMode(9, INPUT_PULLUP);
-  pinMode(10, INPUT_PULLUP);
-  pinMode(11, INPUT_PULLUP);
-  pinMode(12, INPUT_PULLUP);
-  pinMode(teensyLed, OUTPUT);
-  pinMode(batteryLed, OUTPUT);
-  pinMode(connectionLed, OUTPUT);
-  pinMode(batteryADC, INPUT);
-  digitalWriteFast(teensyLed, LOW);
-  digitalWriteFast(connectionLed, LOW);
-  digitalWriteFast(batteryLed, LOW); // By default the battery is not empty at startup.
-
-  analogReadRes(12);
-  analogReadAveraging(5);
-  analogReference(INTERNAL);
-}
 
 void updateButtons() {
+  // updates each button status and sees if it changed.
+  // add more or less code according to suit your buttons.
+  // 
   debouncer3.update();
   if(debouncer3.fell()) {
     buttons_0_6 |= 0b00000001;
@@ -296,5 +306,60 @@ void updateButtons() {
     buttons_7_13 &= ~(0b00000100);
     Serial1.write(buttons_7_13);
   }
+}
+
+
+
+void InitialiseIO(){
+  pinMode(btStatus, INPUT);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
+  pinMode(6, INPUT_PULLUP);
+  pinMode(7, INPUT_PULLUP);
+  pinMode(8, INPUT_PULLUP);
+  pinMode(9, INPUT_PULLUP);
+  pinMode(10, INPUT_PULLUP);
+  pinMode(11, INPUT_PULLUP);
+  pinMode(12, INPUT_PULLUP);
+  pinMode(teensyLed, OUTPUT);
+  pinMode(batteryLed, OUTPUT);
+  pinMode(connectionLed, OUTPUT);
+  pinMode(batteryADC, INPUT);
+  digitalWriteFast(teensyLed, LOW);
+  digitalWriteFast(connectionLed, LOW);
+  digitalWriteFast(batteryLed, LOW); // By default the battery is not empty at startup.
+
+  analogReadRes(12);
+  analogReadAveraging(5);
+  analogReference(INTERNAL);
+
+  // By default, all pins are inputs.
+  // Unused inputs in an electrically noisy environment will consume many 
+  // mA of power. This is because their voltage floats to a value which makes the input state
+  // switch, and all switching of digital circuitry consumes power.
+  // Please be double sure that you have not connected anything to these pins,
+  // as errors here might fry you Teensy.
+
+  #ifdef POWERSAVING_WITH_PINS_AS_OUTPUTS
+  // list your unused digital pins here
+  pinMode(14, OUTPUT);
+  pinMode(15, OUTPUT);
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
+  pinMode(18, OUTPUT);
+  pinMode(19, OUTPUT);
+  pinMode(20, OUTPUT);
+  pinMode(24, OUTPUT);
+  pinMode(25, OUTPUT);
+  pinMode(26, OUTPUT);
+  pinMode(27, OUTPUT);
+  pinMode(28, OUTPUT);
+  pinMode(29, OUTPUT);
+  pinMode(30, OUTPUT);
+  pinMode(31, OUTPUT);
+  pinMode(32, OUTPUT);
+  pinMode(33, OUTPUT);
+  #endif
 }
 
