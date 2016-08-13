@@ -21,11 +21,11 @@ byte connectionLedStatus = 0;
 #define connectionLed 11
 
 long const int WaitIndicationInterval = 200;
-long int lastWaitIndicationUpdate = 0;
+unsigned long int lastWaitIndicationUpdate = 0;
 
 
 long const int WaitBatteryInterval = 1000;
-long int lastBatteryIndicationUpdate = 0;
+unsigned long int lastBatteryIndicationUpdate = 0;
 
 void setup() {
 

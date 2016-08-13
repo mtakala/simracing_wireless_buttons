@@ -9,7 +9,7 @@
    -------------------------------------------------------------------------
    0 serial rx
    1 serial tx
-   2 bluetooth stat
+   2 bluetooth status
    3-12 button inputs
    13  Teensy's own led
    14-20 unused
@@ -17,6 +17,15 @@
    22 Connection_led
    23 Battery voltage adc
    24-33 unused
+
+   On Teensy 3.1 & 3.2 the following pins are PWM capable:
+   3, 4, 5, 6, 9, 10, 20, 21, 22, 23, 25, 3
+   Absolute maximum current is specified as 20 mA on the datasheet.
+   Authors of this code recommend at least a 82 ohm series resistor
+   for the LED-driving pins when using a typical small 3mm led. 
+
+   The LED:s are PWM driven, and their brightness percentage is set 
+   via LED_BRIGHTNESS definition. Range is from 0 - 100 %.
    -------------------------------------------------------------------------
 
    NOTES ABOUT POWER SAVING MEASURES:
@@ -46,6 +55,11 @@
 #define connectionLed 22
 #define batteryADC 23 
 
+#define LED_BRIGHTNESS 5 // define led brighness here in percentage
+// for 82 ohm series resistor and small 3mm red/green through-hole
+// led, 5 % seems fine.
+
+#define ledOutputValue 255*LED_BRIGHTNESS/100
 
 // Uncomment this to save a bit of battery power.
 // DANGER: Please make double sure that all your unconnected pins
@@ -91,9 +105,9 @@ long const int StatusInterval = 1500;
 long const int BatteryInterval = 1000; 
 long const int WaitIndicationInterval = 200;
 
-long int lastStatusUpdate = 0;
-long int lastBatteryUpdate = 0;
-long int lastWaitIndicationUpdate = 0;
+unsigned long int lastStatusUpdate = 0;
+unsigned long int lastBatteryUpdate = 0;
+unsigned long int lastWaitIndicationUpdate = 0;
 
 // Adjust to fit your voltage divider and battery.
 // This value is good for 33k / 11.85k resistors when using
@@ -147,7 +161,7 @@ void setup()
 void loop() {
   // Check Bluetooth status
   if (digitalReadFast(btStatus)) {
-    digitalWriteFast(connectionLed, HIGH);
+    analogWrite(connectionLed, ledOutputValue);
     btConnected = true;
   } else btConnected = false;
   
@@ -165,7 +179,11 @@ void loop() {
 void runWaitBtIndication() {
   if (millis() > (lastWaitIndicationUpdate + WaitIndicationInterval)) {
     lastWaitIndicationUpdate = millis();
-    digitalWriteFast(connectionLed, connectionLedStatus);
+    if(connectionLedStatus) {
+      analogWrite(connectionLed, ledOutputValue);
+    } else{
+      digitalWriteFast(connectionLed, 0);
+    }
     connectionLedStatus = !connectionLedStatus;
   }
 }
@@ -186,9 +204,13 @@ void checkBattery() {
     }
 
     if (batteryLow) {
-      digitalWriteFast(batteryLed, batteryLedStatus);
+      if(batteryLedStatus) {
+        analogWrite(batteryLed, ledOutputValue);
+      } else {
+        digitalWriteFast(batteryLed, LOW);
+      }
       batteryLedStatus = !batteryLedStatus;
-    } else digitalWriteFast(batteryLed, LOW);
+    } 
   }
 }
 
@@ -202,6 +224,7 @@ void sanityUpdate() {
 
     // 13 = red led on teensy 3.2. Might as well flash it.
     // as aliveness status.
+    // Pin 13 is not PWM capable, so just regular digitalWriteFasts here.
     if(ledStatus) {
       ledStatus = 0;
       digitalWriteFast(teensyLed, LOW);
