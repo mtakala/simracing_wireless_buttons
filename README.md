@@ -36,8 +36,7 @@ As the system is intended to be battery powered, the recommendation is to progra
 or 16 MHz clock. These are set from Tools menu in Arduino/Teensyduino IDE. Setting NO USB will require you to press the manual program button on Teensy to upload the code, but it will save a lot of power.
 (2)
 Additionally you can set all unused inputs as outputs, which makes them not floating and they will consume less power that way.
-This has been implemented with a macro, and it has NOT been enabled as default.
-PLEASE BE SURE TO NOT HAVE ANYTHING CONNECTED TO THE UNUSED PINS LISTED IN InitialiseIO() FUNCTION. THE AUTHOR(S) TAKE NOT RESPONSIBILITY IF YOU MANAGE TO FRY/SHORT OUT A PIN OR YOUR TEENSY MICROCONTROLLER.
+This has been implemented with a macro, and it has NOT been enabled as default. PLEASE BE SURE TO NOT HAVE ANYTHING CONNECTED TO THE UNUSED PINS LISTED IN InitialiseIO() FUNCTION. THE AUTHOR(S) TAKE NOT RESPONSIBILITY IF YOU MANAGE TO FRY/SHORT OUT A PIN OR YOUR TEENSY MICROCONTROLLER.
 -------------------------------------------------------------------------
 ## NOTE ABOUT BATTERY VOLTAGE ADC MEASUREMENT
 -------------------------------------------------------------------------
