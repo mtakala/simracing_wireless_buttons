@@ -19,7 +19,7 @@ for their work on the bounce library.
 Initial (untested) commits on August 4th, 2016.  
 Initial testing and improvements by Juha Koljonen on August 4th, 2016.  
 Measured delay / lag is in between 10-15ms.  
-Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Battery notification is also being relayed to a led on the base system.  Additional features added since then.
+Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Battery notification is also being relayed to a led on the base system.  Additional features added since then.  
 
 
 
@@ -30,8 +30,8 @@ Full-up end-to-end testing performed on August 5th, 2016, and at this stage the 
 As the system is intended to be battery powered, the recommendation is to program Teensy as USB TYPE = NO USB and use for example 24MHz 
 or 16 MHz clock. These are set from Tools menu in Arduino/Teensyduino IDE. Setting NO USB will require you to press the manual program button on Teensy to upload the code, but it will save a lot of power.
 (2)
-Additionally you can set all unused inputs as outputs, which makes them not floating and they will consume less power that way.
-This has been implemented with a macro, and it has NOT been enabled as default. PLEASE BE SURE TO NOT HAVE ANYTHING CONNECTED TO THE UNUSED PINS LISTED IN InitialiseIO() FUNCTION. THE AUTHOR(S) TAKE NOT RESPONSIBILITY IF YOU MANAGE TO FRY/SHORT OUT A PIN OR YOUR TEENSY MICROCONTROLLER.
+Additionally you can set all unused inputs as outputs, which makes them not floating and they will consume less power that way. This has been implemented with a macro, and it has NOT been enabled as default. Please be sure to not have anything connected to the unused pins listed in initialiseio() function. __The author(s) take not responsibility if you manage to fry/short out a pin or your Teensy microcontroller.__  
+  
 -------------------------------------------------------------------------
 ## NOTE ABOUT BATTERY VOLTAGE ADC MEASUREMENT
 -------------------------------------------------------------------------
@@ -43,5 +43,5 @@ Then you can use maths like this:
 X = 3.75  
 X = 3600 \* 3.75 / YOUR_MEASURED_VOLTAGE  
 
-This will result in a value for BATTERY_LOW_VOLTAGE_THRESHOLD that should work, as ADC is linear. Round up to the next even hundred to be extra safe.
+This will result in a value for BATTERY\_LOW\_VOLTAG\E_THRESHOLD that should work, as ADC is linear. Round up to the next even hundred to be extra safe.
 -------------------------------------------------------------------------
