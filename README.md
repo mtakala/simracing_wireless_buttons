@@ -46,8 +46,11 @@ low voltage by blinkin the led, and then adjust BATTERY_LOW_VOLTAGE_THRESHOLD ac
 
 Then you can use maths like this:
   3600 = YOUR_MEASURED_VOLTAGE
+  
   X = 3.75
+  
   X = 3600 * 3.75 / YOUR_MEASURED_VOLTAGE
+  
 
 This will result in a value for BATTERY_LOW_VOLTAGE_THRESHOLD that should work, as ADC is linear. Round up to the next even hundred to be extra safe.
 -------------------------------------------------------------------------
