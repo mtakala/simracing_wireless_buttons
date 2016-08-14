@@ -33,9 +33,9 @@
    (1) 
    As the system is intended to be battery powered, the recommendation 
    is to program Teensy as USB TYPE = NO USB and use for example 24MHz 
-   clock. These are set from Tools menu in Arduino/Teensyduino IDE:
-   Setting NO USB will require you to press the manual program button on 
-   Teensy to upload the code, but it will save a lot of power.
+   or 16 MHz clock. These are set from Tools menu in Arduino/Teensyduino 
+   IDE. Setting NO USB will require you to press the manual program button 
+   on Teensy to upload the code, but it will save a lot of power.
 
    (2)
    Additionally you can set all unused inputs as outputs, which
@@ -46,6 +46,33 @@
    LISTED IN InitialiseIO() FUNCTION. THE AUTHOR(S) TAKE NOT RESPONSIBILITY
    IF YOU MANAGE TO FRY/SHORT OUT A PIN OR YOUR TEENSY MICROCONTROLLER.
    -------------------------------------------------------------------------
+
+   NOTE ABOUT BATTERY VOLTAGE ADC MEASUREMENT
+   -------------------------------------------------------------------------
+   As typical resistors have 5% or even 10% tolerance, you should
+   use a multimeter to measure when the battery voltage starts to indicate
+   low voltage by blinkin the led, and then adjust
+   BATTERY_LOW_VOLTAGE_THRESHOLD accordingly.
+
+   If you are running on 1-cell LiPO battery, you shouldn't discharge
+   it more than 80% of its capacity, leaving 20% capacity in the battery.
+   This equals to about 3.75 volts. This is recommended, because deeper 
+   discharges will start to reduce overall battery life.
+
+   One way to do your ADC/voltage divider calibration is to set
+   the variable to quite high value, for example 3800. Start with a known
+   full battery, and see when the low battery voltage measurement triggers.
+   Then measure the battery voltage using a multimeter. 
+   Then you can use maths like this:
+   3600     =   YOUR_MEASURED_VOLTAGE
+   X        =   3.75
+
+   X = 3600 * 3.75 / YOUR_MEASURED_VOLTAGE
+
+   This will result in a value for BATTERY_LOW_VOLTAGE_THRESHOLD that should
+   work, as ADC is linear. Round up to the next even hundred to be
+   extra safe.
+   -------------------------------------------------------------------------
 */
 
 // used pin definitions, other than buttons
@@ -55,11 +82,24 @@
 #define connectionLed 22
 #define batteryADC 23 
 
-#define LED_BRIGHTNESS 5 // define led brighness here in percentage
+
+// define led brighness here in percentage
+#define LED_BRIGHTNESS 5
 // for 82 ohm series resistor and small 3mm red/green through-hole
 // led, 5 % seems fine.
-
 #define ledOutputValue 255*LED_BRIGHTNESS/100
+
+
+// Define if you want to blink Teensy's own led or not.
+// Defined value = yes, commented out = no
+#define BLINK_TEENSY_LED
+
+
+// Adjust to fit your voltage divider and battery.
+// This value is good starting point for 33k / 11.85k 
+// resistors when using internal 1.2V voltage reference on Teensy 3.2.
+#define BATTERY_LOW_VOLTAGE_THRESHOLD 3600
+
 
 // Uncomment this to save a bit of battery power.
 // DANGER: Please make double sure that all your unconnected pins
@@ -67,7 +107,6 @@
 // Errors here will permanently damage your Teensy microcontroller.
 
 // #define POWERSAVING_WITH_PINS_AS_OUTPUTS
-
 
 
 // Included the Bounce2 library found here :
@@ -109,10 +148,6 @@ unsigned long int lastStatusUpdate = 0;
 unsigned long int lastBatteryUpdate = 0;
 unsigned long int lastWaitIndicationUpdate = 0;
 
-// Adjust to fit your voltage divider and battery.
-// This value is good for 33k / 11.85k resistors when using
-// internal 1.2V voltage reference on Teensy 3.2.
-const int batterylowVoltageThreshold = 3730;
 
 boolean batteryLow = false;
 byte batteryLedStatus = 0;
@@ -156,6 +191,9 @@ void setup()
   // Connect to Bt module
   Serial1.begin(57600); // use same baud rate as you have set your BT modules
   Serial1.flush();
+
+  // turn off teensy led
+  digitalWriteFast(teensyLed, LOW);
 }
   
 void loop() {
@@ -182,7 +220,7 @@ void runWaitBtIndication() {
     if(connectionLedStatus) {
       analogWrite(connectionLed, ledOutputValue);
     } else{
-      digitalWriteFast(connectionLed, 0);
+      analogWrite(connectionLed, 0);
     }
     connectionLedStatus = !connectionLedStatus;
   }
@@ -194,7 +232,7 @@ void checkBattery() {
     lastBatteryUpdate = millis(); 
 
     // check if battery low:
-    if (analogRead(batteryADC) < batterylowVoltageThreshold) {
+    if (analogRead(batteryADC) < BATTERY_LOW_VOLTAGE_THRESHOLD) {
       batteryLow = true;
       buttons_7_13 |= 0b01000000; // this bit tells battery status to base unit
       
@@ -207,7 +245,7 @@ void checkBattery() {
       if(batteryLedStatus) {
         analogWrite(batteryLed, ledOutputValue);
       } else {
-        digitalWriteFast(batteryLed, LOW);
+        analogWrite(batteryLed, 0);
       }
       batteryLedStatus = !batteryLedStatus;
     } 
@@ -222,6 +260,7 @@ void sanityUpdate() {
       Serial1.write(buttons_0_6);
       Serial1.write(buttons_7_13);
 
+    #ifdef BLINK_TEENSY_LED
     // 13 = red led on teensy 3.2. Might as well flash it.
     // as aliveness status.
     // Pin 13 is not PWM capable, so just regular digitalWriteFasts here.
@@ -232,6 +271,7 @@ void sanityUpdate() {
       ledStatus = 1;
       digitalWriteFast(teensyLed, HIGH);
     }
+    #endif
   }
 }
 
