@@ -11,20 +11,15 @@ http://phillipecantin.blogspot.fi/2014/08/hc-05-bluetooth-link-with-zero-code.ht
 
 Please take note to avoid HC-06 modules which cannot be programmed with AT commands and thus cannot connect to each other.
 
-Credit to
-  Thomas O Fredericks (tof@t-o-f.info)
-  and previous contributions by Eric Lowry, Jim Schimpf and Tom Harkaway
+Credit to  
+  Thomas O Fredericks (tof@t-o-f.info)  
+  and previous contributions by Eric Lowry, Jim Schimpf and Tom Harkaway  
 for their work on the bounce library.
 
-Initial (untested) commits on August 4th, 2016.
-
-Initial testing and improvements by Juha Koljonen on August 4th, 2016.
-
-Measured delay / lag is in between 10-15ms.
-
-Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Battery notification is also being relayed to a led on the base system.
-
-Additional features added since then.
+Initial (untested) commits on August 4th, 2016.  
+Initial testing and improvements by Juha Koljonen on August 4th, 2016.  
+Measured delay / lag is in between 10-15ms.  
+Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Battery notification is also being relayed to a led on the base system.  Additional features added since then.
 
 
 
