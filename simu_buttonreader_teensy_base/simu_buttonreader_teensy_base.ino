@@ -83,7 +83,11 @@ void loop() {
   if (digitalReadFast(btStatus)) {
     analogWrite(connectionLed, ledOutputValue);
     btConnected = true;
-  } else btConnected = false;
+  } else {
+    btConnected = false;
+    analogWrite(batteryLed, 0); // no connection, can't say the battery is low.
+    batteryLow=false;
+  }
 
   if(btConnected) {
     if(Serial1.available()) {
@@ -147,6 +151,9 @@ void runBatteryIndication() {
         analogWrite(batteryLed, 0);
       }
       batteryLedStatus = !batteryLedStatus;
+  } else {
+    //make sure it does not stay on!
+    analogWrite(batteryLed, 0);
   }
 }
 
