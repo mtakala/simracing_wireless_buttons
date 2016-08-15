@@ -6,19 +6,29 @@
 	0 serial rx
 	1 serial tx
 	2 bluetooth status
-  11 connection status led
-  13 power led
+  22 battery warning led
+  23 power /connection status led
 */
 
+// used pin definitions
+#define btStatus 2
+#define batteryLed 22
+#define connectionLed 23
+
+// define led brighness here in percentage
+#define LED_BRIGHTNESS 5
+// for 82-100 ohm series resistor and small 3mm red/green through-hole
+// led, 5 % seems fine.
+#define ledOutputValue 255*LED_BRIGHTNESS/100
+
 // some status variables
-boolean teensyLedStatus = false;
+boolean batteryLow = false;
+byte batteryLedStatus = 0;
+
 boolean btConnected = false;
-boolean lowBattery = false;
 byte connectionLedStatus = 0;
 
-#define btStatus 2
-#define teensyLed 13
-#define connectionLed 11
+
 
 long const int WaitIndicationInterval = 200;
 unsigned long int lastWaitIndicationUpdate = 0;
@@ -31,21 +41,17 @@ void setup() {
 
   // I/O directions
   pinMode(btStatus, INPUT);
-  pinMode(teensyLed, OUTPUT);
+  pinMode(batteryLed, OUTPUT);
   pinMode(connectionLed, OUTPUT);
 
   // wake-up blinking
+
   digitalWriteFast(connectionLed, HIGH);
-  digitalWriteFast(teensyLed, HIGH);
+  digitalWriteFast(batteryLed, HIGH);
   delay(1000);
   digitalWriteFast(connectionLed, LOW);
-  digitalWriteFast(teensyLed, LOW);
-  delay(1000);
-  digitalWriteFast(teensyLed, HIGH);
-  
-  // set led status
-  teensyLedStatus=true;
-  
+  digitalWriteFast(batteryLed, LOW);
+
   // set all joystick things to known positions
   Joystick.useManualSend(true); // enable this to get simultaneous button presses if needed
   Joystick.X(512);            // "value" is from 0 to 1023
@@ -75,11 +81,9 @@ void setup() {
 void loop() {
   // Check Bluetooth status
   if (digitalReadFast(btStatus)) {
-    digitalWriteFast(connectionLed, HIGH);
+    analogWrite(connectionLed, ledOutputValue);
     btConnected = true;
-  } else {
-    btConnected = false;
-  }
+  } else btConnected = false;
 
   if(btConnected) {
     if(Serial1.available()) {
@@ -107,9 +111,9 @@ void loop() {
         // there are some spare bits. This uses one of them for battery status reporting.
         // get battery status
         if(bitRead(buttons, 6)) { // bit 6 && 7 are both ones when battery low
-          lowBattery = true;
+          batteryLow = true;
         } else {
-          lowBattery = false;
+          batteryLow = false;
         }
 	      Joystick.send_now();
       }
@@ -125,19 +129,24 @@ void loop() {
 void runWaitBtIndication() {
   if (millis() > (lastWaitIndicationUpdate + WaitIndicationInterval)) {
     lastWaitIndicationUpdate = millis();
-    digitalWriteFast(connectionLed, connectionLedStatus);
+    if(connectionLedStatus) {
+      analogWrite(connectionLed, ledOutputValue);
+    } else{
+      analogWrite(connectionLed, 0);
+    }
     connectionLedStatus = !connectionLedStatus;
   }
 }
 
 void runBatteryIndication() {
   // blink status led at known interval when battery is low.
-  if(lowBattery) {
-    if (millis() > (lastBatteryIndicationUpdate + WaitBatteryInterval)) {
-      lastBatteryIndicationUpdate = millis();
-      digitalWriteFast(teensyLed, teensyLedStatus);
-      teensyLedStatus = !teensyLedStatus;
-    }
+    if (batteryLow) {
+      if(batteryLedStatus) {
+        analogWrite(batteryLed, ledOutputValue);
+      } else {
+        analogWrite(batteryLed, 0);
+      }
+      batteryLedStatus = !batteryLedStatus;
   }
 }
 
