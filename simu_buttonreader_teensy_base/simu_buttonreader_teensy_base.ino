@@ -17,7 +17,7 @@
 
 // define led brighness here in percentage
 #define LED_BRIGHTNESS 5
-// for 82-100 ohm series resistor and small 3mm red/green through-hole
+// for 82-120 ohm series resistor and small 3mm red/green through-hole
 // led, 5 % seems fine.
 #define ledOutputValue 255*LED_BRIGHTNESS/100
 
@@ -31,11 +31,11 @@ byte connectionLedStatus = 0;
 
 
 long const int WaitIndicationInterval = 200;
-unsigned long int lastWaitIndicationUpdate = 0;
+elapsedMillis lastWaitIndicationUpdate;
 
 
 long const int WaitBatteryInterval = 1000;
-unsigned long int lastBatteryIndicationUpdate = 0;
+elapsedMillis lastBatteryIndicationUpdate;
 
 void setup() {
 
@@ -45,7 +45,7 @@ void setup() {
   pinMode(connectionLed, OUTPUT);
 
   // wake-up blinking
-
+  
   digitalWriteFast(connectionLed, HIGH);
   digitalWriteFast(batteryLed, HIGH);
   delay(1000);
@@ -74,8 +74,9 @@ void setup() {
   Serial1.flush(); // flush twice to make sure
   
   // reset these to known value
-  lastWaitIndicationUpdate = millis();
-  lastBatteryIndicationUpdate = millis();
+  // not needed using elapsedMillis.
+  // lastWaitIndicationUpdate = millis();
+  // lastBatteryIndicationUpdate = millis();
 }
 
 void loop() {
@@ -131,8 +132,8 @@ void loop() {
 }
 
 void runWaitBtIndication() {
-  if (millis() > (lastWaitIndicationUpdate + WaitIndicationInterval)) {
-    lastWaitIndicationUpdate = millis();
+  if (lastWaitIndicationUpdate > WaitIndicationInterval) {
+    lastWaitIndicationUpdate = 0;
     if(connectionLedStatus) {
       analogWrite(connectionLed, ledOutputValue);
     } else{
@@ -143,7 +144,9 @@ void runWaitBtIndication() {
 }
 
 void runBatteryIndication() {
-  // blink status led at known interval when battery is low.
+  if(lastBatteryIndicationUpdate > WaitBatteryInterval) {
+    lastBatteryIndicationUpdate = 0;
+    // blink status led at known interval when battery is low.
     if (batteryLow) {
       if(batteryLedStatus) {
         analogWrite(batteryLed, ledOutputValue);
@@ -151,9 +154,10 @@ void runBatteryIndication() {
         analogWrite(batteryLed, 0);
       }
       batteryLedStatus = !batteryLedStatus;
-  } else {
+    } else {
     //make sure it does not stay on!
     analogWrite(batteryLed, 0);
+    }
   }
 }
 
