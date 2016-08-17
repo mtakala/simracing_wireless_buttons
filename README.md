@@ -21,6 +21,7 @@ Initial testing and improvements by Juha Koljonen on August 4th, 2016.
 Measured delay / lag is in between 10-15ms.  
 Full-up end-to-end testing performed on August 5th, 2016, and at this stage the system works. Battery notification is also being relayed to a led on the base system.  Additional features added since then.  
 
+The code is pretty much feature complete now (August 17th). Its still not plug and play solution, and things need to be modified according to users' hardware config.  Please use the issue tracker for feature suggestions. For example, support of rotary switches has been requested, but the authors don't have any idea how the work in Sim Racing. Are they just buttons or something more complicated?  
 
 
 
@@ -43,7 +44,8 @@ Then you can use maths like this:
 X = 3.75  
 X = 3600 \* 3.75 / YOUR_MEASURED_VOLTAGE  
 
-This will result in a value for BATTERY_LOW_VOLTAGE_THRESHOLD that should work, as ADC is linear. Round up to the next even hundred to be extra safe.  
+This will result in a value for BATTERY_LOW_VOLTAGE_THRESHOLD that roughly should work, as ADC is linear. Round up to the next even hundred to be extra safe.  
 
 
 -------------------------------------------------------------------------  
+
