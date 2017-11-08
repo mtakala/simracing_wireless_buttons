@@ -56,10 +56,10 @@ void setup() {
   Joystick.useManualSend(true); // enable this to get simultaneous button presses if needed
   Joystick.X(512);            // "value" is from 0 to 1023
   Joystick.Y(512);            //   512 is resting position
-  Joystick.Z(512);
-  Joystick.Zrotate(512);
-  Joystick.sliderLeft(512);
-  Joystick.sliderRight(512);
+  Joystick.Z(0);
+  Joystick.Zrotate(0);
+  Joystick.sliderLeft(0);
+  Joystick.sliderRight(0);
   
   // all buttons off
   for(int i = 1; i<33; i++) {
@@ -80,6 +80,12 @@ void setup() {
 }
 
 void loop() {
+  Joystick.X(512);            // "value" is from 0 to 1023
+  Joystick.Y(512);            //   512 is resting position
+  Joystick.Z(0);
+  Joystick.Zrotate(0);
+  Joystick.sliderLeft(0);
+  Joystick.sliderRight(0);
   // Check Bluetooth status
   if (digitalReadFast(btStatus)) {
     analogWrite(connectionLed, ledOutputValue);
@@ -160,4 +166,3 @@ void runBatteryIndication() {
     }
   }
 }
-
