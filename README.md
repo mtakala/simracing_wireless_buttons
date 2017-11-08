@@ -30,6 +30,7 @@ The code is pretty much feature complete now (August 17th). Its still not plug a
 (1) 
 As the system is intended to be battery powered, the recommendation is to program Teensy as USB TYPE = NO USB and use for example 24MHz 
 or 16 MHz clock. These are set from Tools menu in Arduino/Teensyduino IDE. Setting NO USB will require you to press the manual program button on Teensy to upload the code, but it will save a lot of power.
+
 (2)
 Additionally you can set all unused inputs as outputs, which makes them not floating and they will consume less power that way. This has been implemented with a macro, and it has NOT been enabled as default. Please be sure to not have anything connected to the unused pins listed in initialiseio() function. __The author(s) take not responsibility if you manage to fry/short out a pin or your Teensy microcontroller.__  
   
