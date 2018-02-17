@@ -248,7 +248,9 @@ void checkBattery() {
         analogWrite(batteryLed, 0);
       }
       batteryLedStatus = !batteryLedStatus;
-    } 
+    } else {
+      analogWrite(batteryLed, 0);
+    }
   }
 }
 
